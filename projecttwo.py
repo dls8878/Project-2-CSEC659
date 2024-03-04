@@ -1,3 +1,6 @@
+#Project Two: Code Focus
+
+#imports
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox, Listbox, Toplevel, END, Scrollbar
 from cryptography.fernet import Fernet
@@ -7,31 +10,33 @@ import random
 import string
 import csv
 
+# Define file paths for the secret key and the encrypted passwords file
 KEY_FILE = 'secret.key'
 PASSWORDS_FILE = 'passwords.json'
 
-
+# Generate a new encryption key
 def generate_key():
     key = Fernet.generate_key()
     with open(KEY_FILE, 'wb') as key_file:
         key_file.write(key)
     return key
 
-
+# Load the encryption key from file
 def load_key():
-    return open(KEY_FILE, 'rb').read()
+    with open(KEY_FILE, 'rb') as key_file:
+        return key_file.read()
 
-
+# Encrypt the data using the loaded key
 def encrypt_data(data, key):
     fernet = Fernet(key)
     return fernet.encrypt(data.encode())
 
-
+# Decrypt the data using the loaded key
 def decrypt_data(encrypted_data, key):
     fernet = Fernet(key)
     return fernet.decrypt(encrypted_data).decode()
 
-
+# Load passwords from the encrypted file
 def load_passwords():
     if os.path.exists(PASSWORDS_FILE):
         with open(PASSWORDS_FILE, 'rb') as file:
@@ -40,14 +45,14 @@ def load_passwords():
         return json.loads(decrypted_data)
     return []
 
-
+# Save passwords to the encrypted file
 def save_passwords(passwords):
     data_to_encrypt = json.dumps(passwords, indent=4)
     encrypted_data = encrypt_data(data_to_encrypt, key)
     with open(PASSWORDS_FILE, 'wb') as file:
         file.write(encrypted_data)
 
-
+# Generate a random password
 def generate_password(length=12, include_special_chars=True):
     if length < 8:
         length = 8
@@ -56,10 +61,10 @@ def generate_password(length=12, include_special_chars=True):
         characters += string.punctuation
     return ''.join(random.choice(characters) for i in range(length))
 
-
+# Load or generate the encryption key
 key = load_key() if os.path.exists(KEY_FILE) else generate_key()
+# Load existing passwords
 passwords = load_passwords()
-
 
 class PasswordManagerApp(tk.Tk):
     def __init__(self):
@@ -71,37 +76,47 @@ class PasswordManagerApp(tk.Tk):
         self.configure_gui_styles()
         self.init_ui()
 
+    # Configure styles for the GUI elements
     def configure_gui_styles(self):
         self.style.configure('TButton', font=('Helvetica', 12), foreground='blue', background='light gray')
         self.style.map('TButton', foreground=[('active', 'green')], background=[('active', 'light blue')])
         self.style.configure('TLabel', font=('Helvetica', 12), foreground='dark green')
         self.style.configure('TFrame', background='light blue')
 
+    # Initialize the UI - setup layout and buttons
     def init_ui(self):
         frame = ttk.Frame(self)
         frame.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
 
+        # Button to add a new password
         self.add_button = ttk.Button(frame, text="Add Password", command=self.add_password)
         self.add_button.pack(pady=5, fill=tk.X)
 
+        # Button to view saved passwords
         self.view_button = ttk.Button(frame, text="View Passwords", command=self.view_passwords)
         self.view_button.pack(pady=5, fill=tk.X)
 
+        # Button to delete a specific password
         self.delete_button = ttk.Button(frame, text="Delete Password", command=self.delete_password)
         self.delete_button.pack(pady=5, fill=tk.X)
 
+        # Button to export passwords to a CSV file
         self.export_button = ttk.Button(frame, text="Export Passwords to CSV", command=self.export_passwords_to_csv)
         self.export_button.pack(pady=5, fill=tk.X)
 
+        # Button to import passwords from a CSV file
         self.import_button = ttk.Button(frame, text="Import Passwords from CSV", command=self.import_passwords_from_csv)
         self.import_button.pack(pady=5, fill=tk.X)
 
+        # Button to exit the application
         self.exit_button = ttk.Button(frame, text="Exit", command=self.destroy)
         self.exit_button.pack(pady=5, fill=tk.X)
 
+        # Button to delete all passwords and exit the application
         self.delete_all_exit_button = ttk.Button(frame, text="Delete All & Exit", command=self.delete_all_and_exit)
         self.delete_all_exit_button.pack(pady=5, fill=tk.X)
 
+    # Add a new password entry
     def add_password(self):
         service = simpledialog.askstring("Add Password", "Enter the service name:", parent=self)
         if service:
@@ -121,6 +136,7 @@ class PasswordManagerApp(tk.Tk):
             save_passwords(passwords)
             messagebox.showinfo("Success", "Password added successfully", parent=self)
 
+    # View saved passwords
     def view_passwords(self):
         passwords_window = Toplevel(self)
         passwords_window.title("View Passwords")
@@ -133,6 +149,7 @@ class PasswordManagerApp(tk.Tk):
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=listbox.yview)
 
+    # Delete a specific password
     def delete_password(self):
         def confirm_delete():
             selection = listbox.curselection()
@@ -153,6 +170,7 @@ class PasswordManagerApp(tk.Tk):
         delete_btn = ttk.Button(delete_window, text="Delete Selected", command=confirm_delete)
         delete_btn.pack(pady=5)
 
+    # Delete all passwords and exit the application
     def delete_all_and_exit(self):
         if messagebox.askyesno("Confirm Delete All",
                                "This will delete all stored passwords and exit the program. Are you sure?",
@@ -165,6 +183,7 @@ class PasswordManagerApp(tk.Tk):
                 messagebox.showerror("Error", f"Failed to delete data: {str(e)}", parent=self)
             self.destroy()
 
+    # Export saved passwords to a CSV file
     def export_passwords_to_csv(self):
         export_file = 'passwords_export.csv'
         with open(export_file, mode='w', newline='') as file:
@@ -174,6 +193,7 @@ class PasswordManagerApp(tk.Tk):
                 writer.writerow([item['service'], item['password']])
         messagebox.showinfo("Export Successful", f"Passwords exported to {export_file}")
 
+    # Import passwords from a CSV file
     def import_passwords_from_csv(self):
         import_file = simpledialog.askstring("Import Passwords", "Enter the CSV file name:", parent=self)
         if import_file:
@@ -187,7 +207,7 @@ class PasswordManagerApp(tk.Tk):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to import passwords: {str(e)}", parent=self)
 
-
+# Run the thing!
 if __name__ == "__main__":
     app = PasswordManagerApp()
     app.mainloop()
